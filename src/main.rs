@@ -63,7 +63,3 @@ fn main() {
     fs::create_dir_all(&directory).unwrap();
     write_libkrunfw_measurment(&directory);
 }
-
-//        let mut file = File::open("test_qboot_data").unwrap();
-//        let mut data: Vec<u8> = Vec::new();
-//        file.read_to_end(&mut data).unwrap();
