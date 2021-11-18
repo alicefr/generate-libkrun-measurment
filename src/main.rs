@@ -1,13 +1,19 @@
-use libc::{c_char, size_t};
+#[macro_use]
+extern crate serde_derive;
 
+use clap::{App, Arg};
+use libc::{c_char, size_t};
+use std::fs::{self, File};
+use std::io::Write;
 #[link(name = "krunfw")]
+
 extern "C" {
     fn krunfw_get_qboot(size: *mut size_t) -> *mut c_char;
     fn krunfw_get_initrd(size: *mut size_t) -> *mut c_char;
     fn krunfw_get_kernel(load_addr: *mut u64, size: *mut size_t) -> *mut c_char;
 }
 
-fn print_libkrun_measurment() {
+fn write_libkrunfw_measurment(dir: &str) {
     let mut kernel_guest_addr: u64 = 0;
     let mut kernel_size: usize = 0;
     let kernel_host_addr = unsafe {
@@ -29,11 +35,35 @@ fn print_libkrun_measurment() {
         unsafe { std::slice::from_raw_parts(kernel_host_addr as *const u8, kernel_size) };
     let initrd_data =
         unsafe { std::slice::from_raw_parts(initrd_host_addr as *const u8, initrd_size) };
-    println!("qboot_size {:?}", qboot_size);
-    println!("kernel_size {:?}", kernel_size);
-    println!("initrd_size {:?}", initrd_size);
+    File::create(dir.to_owned() + "/qboot_data")
+        .unwrap()
+        .write_all(&qboot_data)
+        .unwrap();
+    File::create(dir.to_owned() + "/kernel_data")
+        .unwrap()
+        .write_all(&kernel_data)
+        .unwrap();
+    File::create(dir.to_owned() + "/initrd_data")
+        .unwrap()
+        .write_all(&initrd_data)
+        .unwrap();
 }
 
 fn main() {
-    print_libkrun_measurment();
+    let matches = App::new("generate-libkrunfw-measurment")
+        .arg(
+            Arg::with_name("directory")
+                .short("d")
+                .long("directory")
+                .help("Directory where to store the generated ")
+                .takes_value(true),
+        )
+        .get_matches();
+    let directory = matches.value_of("directory").unwrap_or("").to_string();
+    fs::create_dir_all(&directory).unwrap();
+    write_libkrunfw_measurment(&directory);
 }
+
+//        let mut file = File::open("test_qboot_data").unwrap();
+//        let mut data: Vec<u8> = Vec::new();
+//        file.read_to_end(&mut data).unwrap();
